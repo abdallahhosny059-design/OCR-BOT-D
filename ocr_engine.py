@@ -85,12 +85,11 @@ class OCREngine:
         try:
             encoded = base64.b64encode(part_bytes).decode('utf-8')
             
-            # ✅ اللغات المدعومة: كوري، عربي، إنجليزي، ياباني (من غير صيني)
+            # ✅ إزالة parameter language تماماً
             data = {
                 'apikey': self.api_key,
                 'base64Image': f'data:image/jpeg;base64,{encoded}',
-                'language': 'kor,ara,eng,jpn',  # تمت إزالة chi_sim
-                'OCREngine': '2',
+                'OCREngine': '2',  # أفضل محرك
                 'isOverlayRequired': False,
                 'detectOrientation': True,
                 'scale': True,
@@ -105,18 +104,9 @@ class OCREngine:
                         error_msg = result.get('ErrorMessage', '')
                         logger.error(f"الجزء {part_num} خطأ: {error_msg}")
                         
-                        # إذا كان الخطأ بسبب اللغة، حاول مرة أخرى بلغة واحدة فقط
-                        if "language" in error_msg.lower():
-                            logger.info("🔄 جرب لغة واحدة (kor)...")
-                            data['language'] = 'kor'
-                            async with session.post(self.url, data=data, timeout=60) as resp2:
-                                result2 = await resp2.json()
-                                if not result2.get('IsErroredOnProcessing'):
-                                    text = ""
-                                    for parsed in result2.get('ParsedResults', []):
-                                        text += parsed.get('ParsedText', '')
-                                    if text:
-                                        return text
+                        # إذا كان الخطأ بسبب المفتاح، جرب بدون محرك
+                        if "apikey" in error_msg.lower():
+                            logger.error("❌ مفتاح OCR.Space غير صالح!")
                         return None
                     
                     text = ""
