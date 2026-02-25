@@ -4,49 +4,64 @@ import asyncio
 
 logger = logging.getLogger(__name__)
 
-class TranslatorEngine:
+class SuperTranslator:
+    """محرك ترجمة متعدد مع التبديل التلقائي"""
+    
     def __init__(self):
-        # مترجمين متعددين للتبديل التلقائي
         self.translators = {
             'google': GoogleTranslator,
-            'papago': PapagoTranslator  # ممتاز للكوري!
+            'papago': PapagoTranslator,  # ممتاز للكوري
         }
         
-    def translate(self, text, target='ar'):
-        """ترجمة النص باستخدام أفضل مترجم متاح"""
+    def translate(self, text, source='auto', target='ar'):
+        """ترجمة النص مع كشف اللغة التلقائي"""
         try:
             if not text or len(text) < 3:
                 return None
-                
-            logger.info(f"جاري ترجمة: {text[:50]}...")
             
-            # محاولات الترجمة
-            translated = None
-            errors = []
-            
-            # المحاولة 1: Papago (ممتاز للكوري)
+            # محاولة كشف اللغة
             try:
-                papago = PapagoTranslator(source='ko', target=target)
-                translated = papago.translate(text)
-                logger.info("✅ تمت الترجمة باستخدام Papago")
-                return translated
-            except Exception as e:
-                errors.append(f"Papago: {e}")
-                logger.warning("Papago فشل، نجرب Google...")
+                detector = GoogleTranslator()
+                detected = detector.detect(text)
+                source_lang = detected[0] if detected else source
+                logger.info(f"اللغة المكتشفة: {source_lang}")
+            except:
+                source_lang = source
             
-            # المحاولة 2: Google (ممتاز كبديل)
+            logger.info(f"جاري ترجمة {len(text)} حرف...")
+            
+            # المحاولة الأولى: Papago (إذا كانت اللغة كورية)
+            if source_lang == 'ko':
+                try:
+                    papago = PapagoTranslator(source='ko', target=target)
+                    translated = papago.translate(text)
+                    if translated:
+                        logger.info("✅ ترجمة ناجحة باستخدام Papago")
+                        return translated
+                except Exception as e:
+                    logger.warning(f"Papago فشل: {e}")
+            
+            # المحاولة الثانية: Google
+            try:
+                google = GoogleTranslator(source=source_lang, target=target)
+                translated = google.translate(text)
+                if translated:
+                    logger.info("✅ ترجمة ناجحة باستخدام Google")
+                    return translated
+            except Exception as e:
+                logger.warning(f"Google فشل: {e}")
+            
+            # المحاولة الثالثة: Google تلقائي
             try:
                 google = GoogleTranslator(source='auto', target=target)
                 translated = google.translate(text)
-                logger.info("✅ تمت الترجمة باستخدام Google")
-                return translated
+                if translated:
+                    logger.info("✅ ترجمة ناجحة باستخدام Google (تلقائي)")
+                    return translated
             except Exception as e:
-                errors.append(f"Google: {e}")
-            
-            # لو فشل كل شيء
-            logger.error(f"فشلت كل محاولات الترجمة: {errors}")
-            return None
-            
+                logger.error(f"جميع محاولات الترجمة فشلت: {e}")
+                return None
+                
         except Exception as e:
-            logger.error(f"خطأ في الترجمة: {e}")
+            logger.error(f"خطأ جسيم في الترجمة: {e}")
             return None
