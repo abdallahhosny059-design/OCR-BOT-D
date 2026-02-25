@@ -84,4 +84,4 @@ class ManhwaBot(commands.Bot):
     
     async def close(self):
         await self.image_handler.close()
-        await super().close()
+        # await super().close()   # 👈 تم تعليق هذا السطر
