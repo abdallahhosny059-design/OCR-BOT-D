@@ -12,35 +12,46 @@ class OCREngine:
         
     async def extract_text(self, image_bytes):
         try:
-            # تحويل الصورة لـ base64
             encoded = base64.b64encode(image_bytes).decode('utf-8')
             
-            # البيانات
+            # استخدام المحرك المتقدم 2 وتفعيل جميع اللغات
             data = {
                 'apikey': self.api_key,
                 'base64Image': f'data:image/png;base64,{encoded}',
-                'language': 'kor',          # كوري
-                'OCREngine': '2',            # أفضل محرك
+                'language': 'kor,ara,eng,jpn,chi_sim',  # كوري + عربي + إنجليزي + ياباني + صيني
+                'OCREngine': '2',                         # أفضل محرك
                 'isOverlayRequired': False,
-                'detectOrientation': True
+                'detectOrientation': True,
+                'scale': True,                            # تكبير الصورة تلقائياً
+                'isTable': False,
+                'filetype': 'PNG'
             }
             
-            # إرسال الطلب
             async with aiohttp.ClientSession() as session:
-                async with session.post(self.url, data=data) as resp:
+                async with session.post(self.url, data=data, timeout=60) as resp:  # مهلة أطول
                     result = await resp.json()
                     
                     if result.get('IsErroredOnProcessing'):
                         logger.error(f"OCR خطأ: {result.get('ErrorMessage')}")
                         return None
                     
-                    # استخراج النص
+                    # استخراج النص كاملاً
                     text = ""
                     for parsed in result.get('ParsedResults', []):
                         text += parsed.get('ParsedText', '')
                     
-                    return text.strip() if text else None
+                    # تنظيف النص
+                    if text:
+                        # إزالة الأسطر الفارغة المتعددة
+                        lines = [line.strip() for line in text.split('\n') if line.strip()]
+                        text = '\n'.join(lines)
+                        
+                        logger.info(f"✅ تم استخراج {len(text)} حرف")
+                        return text
+                    else:
+                        logger.warning("لم يتم العثور على نص")
+                        return None
                     
         except Exception as e:
-            logger.error(f"OCR Error: {e}")
+            logger.error(f"OCR خطأ: {e}")
             return None
