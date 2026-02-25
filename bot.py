@@ -13,6 +13,7 @@ class ManhwaBot(commands.Bot):
     def __init__(self):
         intents = discord.Intents.default()
         intents.message_content = True
+        intents.messages = True
         
         super().__init__(command_prefix='!', intents=intents)
         
@@ -20,22 +21,80 @@ class ManhwaBot(commands.Bot):
         self.ocr_engine = OCREngine()
         self.translator = TranslatorEngine()
         self.start_time = datetime.now()
+        
+        # إعداد الأوامر
+        self.setup_commands()
+    
+    def setup_commands(self):
+        """إعداد أوامر البوت"""
+        
+        @self.command(name='help', aliases=['مساعدة', 'h'])
+        async def help_command(ctx):
+            """عرض المساعدة"""
+            embed = discord.Embed(
+                title="📚 **مساعدة البوت**",
+                description="أهلاً بك! أنا بوت ترجمة المانهوا",
+                color=0x00ff00
+            )
+            embed.add_field(
+                name="📸 **كيفية الاستخدام**",
+                value="فقط أرسل أي صورة مانهوا وسأقوم بترجمتها لك!",
+                inline=False
+            )
+            embed.add_field(
+                name="📊 **الأوامر المتاحة**",
+                value="`!help` - عرض هذه المساعدة\n`!test` - اختبار البوت\n`!stats` - عرض الإحصائيات",
+                inline=False
+            )
+            embed.set_footer(text=f"شغال منذ {self.get_uptime()}")
+            await ctx.send(embed=embed)
+        
+        @self.command(name='test', aliases=['اختبار'])
+        async def test_command(ctx):
+            """اختبار البوت"""
+            await ctx.send("✅ **البوت شغال!**")
+        
+        @self.command(name='stats', aliases=['احصائيات'])
+        async def stats_command(ctx):
+            """عرض الإحصائيات"""
+            uptime = datetime.now() - self.start_time
+            hours = uptime.total_seconds() / 3600
+            
+            embed = discord.Embed(
+                title="📊 **إحصائيات البوت**",
+                color=0x0000ff
+            )
+            embed.add_field(name="⏱️ وقت التشغيل", value=f"{hours:.1f} ساعة")
+            embed.add_field(name="📸 صور معالجة", value="0")
+            await ctx.send(embed=embed)
+    
+    def get_uptime(self):
+        """حساب وقت التشغيل"""
+        delta = datetime.now() - self.start_time
+        hours = int(delta.total_seconds() // 3600)
+        minutes = int((delta.total_seconds() % 3600) // 60)
+        
+        if hours > 0:
+            return f"{hours} ساعة و {minutes} دقيقة"
+        else:
+            return f"{minutes} دقيقة"
     
     async def on_ready(self):
         logger.info(f'✅ البوت شغال! {self.user.name}')
-        await self.change_presence(activity=discord.Game(name="📖 بترجمة المانهوا"))
+        logger.info(f'🆔 ID: {self.user.id}')
+        await self.change_presence(activity=discord.Game(name="📖 بترجمة المانهوا | !help"))
     
     async def on_message(self, message):
         if message.author == self.user:
             return
         
+        # معالجة الأوامر أولاً
         await self.process_commands(message)
         
-        if not message.attachments:
-            return
-        
-        for attachment in message.attachments:
-            await self.process_image(message, attachment)
+        # معالجة الصور
+        if message.attachments:
+            for attachment in message.attachments:
+                await self.process_image(message, attachment)
     
     async def process_image(self, message, attachment):
         try:
@@ -84,4 +143,4 @@ class ManhwaBot(commands.Bot):
     
     async def close(self):
         await self.image_handler.close()
-        # await super().close()   # 👈 تم تعليق هذا السطر
+        # await super().close()
