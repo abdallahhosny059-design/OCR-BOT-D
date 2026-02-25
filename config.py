@@ -5,14 +5,10 @@ load_dotenv()
 
 # المفاتيح الأساسية
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
-OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
-OCR_API_KEY = os.getenv('OCR_API_KEY')
 
-# إعدادات الصور - صور كبيرة جداً
+# إعدادات الصور
 MAX_IMAGE_SIZE = 50 * 1024 * 1024  # 50 ميجابايت
-MAX_IMAGE_DIMENSION = 20000  # 20,000 بكسل
-SUPPORTED_FORMATS = ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp']
+SUPPORTED_FORMATS = ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp', 'tiff']
 
-# إعدادات OCR
-OCR_LANGUAGE = os.getenv('OCR_LANGUAGE', 'kor')
-OCR_API_URL = 'https://api.ocr.space/parse/image'
+# إعدادات OCR - EasyOCR يدعم 80+ لغة
+OCR_LANGUAGES = ['ko', 'en', 'ja', 'zh-cn', 'zh-tw', 'th', 'vi', 'ar']  # أضف ما تشاء
