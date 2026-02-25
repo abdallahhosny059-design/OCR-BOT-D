@@ -1,12 +1,16 @@
 import logging
-from bot import ManhwaBot
+from bot import LegendaryManhwaBot
 from config import DISCORD_TOKEN
 
-logging.basicConfig(level=logging.INFO)
+# إعداد التسجيل
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 
 if __name__ == "__main__":
     if not DISCORD_TOKEN:
         print("❌ توكن الديسكورد مفقود!")
     else:
-        bot = ManhwaBot()
+        bot = LegendaryManhwaBot()
         bot.run(DISCORD_TOKEN)
