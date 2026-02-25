@@ -28,26 +28,7 @@ class ManhwaBot(commands.Bot):
     def setup_commands(self):
         """إعداد أوامر البوت"""
         
-        @self.command(name='help', aliases=['مساعدة', 'h'])
-        async def help_command(ctx):
-            """عرض المساعدة"""
-            embed = discord.Embed(
-                title="📚 **مساعدة البوت**",
-                description="أهلاً بك! أنا بوت ترجمة المانهوا",
-                color=0x00ff00
-            )
-            embed.add_field(
-                name="📸 **كيفية الاستخدام**",
-                value="فقط أرسل أي صورة مانهوا وسأقوم بترجمتها لك!",
-                inline=False
-            )
-            embed.add_field(
-                name="📊 **الأوامر المتاحة**",
-                value="`!help` - عرض هذه المساعدة\n`!test` - اختبار البوت\n`!stats` - عرض الإحصائيات",
-                inline=False
-            )
-            embed.set_footer(text=f"شغال منذ {self.get_uptime()}")
-            await ctx.send(embed=embed)
+        # 👇 شيلنا أمر help نهائياً لأنه مسجل تلقائياً
         
         @self.command(name='test', aliases=['اختبار'])
         async def test_command(ctx):
@@ -67,17 +48,6 @@ class ManhwaBot(commands.Bot):
             embed.add_field(name="⏱️ وقت التشغيل", value=f"{hours:.1f} ساعة")
             embed.add_field(name="📸 صور معالجة", value="0")
             await ctx.send(embed=embed)
-    
-    def get_uptime(self):
-        """حساب وقت التشغيل"""
-        delta = datetime.now() - self.start_time
-        hours = int(delta.total_seconds() // 3600)
-        minutes = int((delta.total_seconds() % 3600) // 60)
-        
-        if hours > 0:
-            return f"{hours} ساعة و {minutes} دقيقة"
-        else:
-            return f"{minutes} دقيقة"
     
     async def on_ready(self):
         logger.info(f'✅ البوت شغال! {self.user.name}')
