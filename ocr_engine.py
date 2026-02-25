@@ -85,10 +85,11 @@ class OCREngine:
         try:
             encoded = base64.b64encode(part_bytes).decode('utf-8')
             
+            # ✅ اللغات الصحيحة لـ OCR.Space
             data = {
                 'apikey': self.api_key,
                 'base64Image': f'data:image/jpeg;base64,{encoded}',
-                'language': 'kor,ara,eng,jpn,chi_sim',
+                'language': 'kor,ara,eng,jpn,chs',  # chs = صيني مبسط
                 'OCREngine': '2',
                 'isOverlayRequired': False,
                 'detectOrientation': True,
