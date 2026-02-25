@@ -3,4 +3,3 @@ python-dotenv==1.0.0
 aiohttp==3.9.3
 Pillow==10.2.0
 requests==2.31.0
-translators==5.7.0
