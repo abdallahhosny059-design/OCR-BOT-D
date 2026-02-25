@@ -1,4 +1,4 @@
-import translators as ts
+import requests
 import logging
 
 logger = logging.getLogger(__name__)
@@ -9,49 +9,29 @@ class TranslatorEngine:
             if not text or len(text) < 3:
                 return None
             
-            # جرب Papago أولاً (أفضل للكوري)
-            try:
-                translated = ts.translate_text(
-                    text,
-                    translator='papago',
-                    from_language='ko',
-                    to_language='ar'
-                )
-                if translated:
-                    logger.info("✅ Papago")
-                    return translated
-            except:
-                pass
+            print(f"🔍 بترجم: {text[:50]}...")
             
-            # لو فشل، جرب Google
-            try:
-                translated = ts.translate_text(
-                    text,
-                    translator='google',
-                    from_language='ko',
-                    to_language='ar'
-                )
-                if translated:
-                    logger.info("✅ Google")
-                    return translated
-            except:
-                pass
+            # Google Translate API (مجاني 100%)
+            url = "https://translate.googleapis.com/translate_a/single"
+            params = {
+                "client": "gtx",
+                "sl": "ko",
+                "tl": "ar",
+                "dt": "t",
+                "q": text
+            }
             
-            # محاولة أخيرة مع كشف اللغة
-            try:
-                translated = ts.translate_text(
-                    text,
-                    translator='bing',
-                    to_language='ar'
-                )
-                if translated:
-                    logger.info("✅ Bing")
-                    return translated
-            except Exception as e:
-                logger.error(f"كل المترجمين فشلوا: {e}")
+            response = requests.get(url, params=params, timeout=15)
+            
+            if response.status_code == 200:
+                result = response.json()
+                translated = result[0][0][0]
+                print(f"✅ تمت الترجمة: {translated[:50]}...")
+                return translated
+            else:
+                print(f"❌ فشل: {response.status_code}")
+                return None
                 
-            return None
-            
         except Exception as e:
-            logger.error(f"ترجمة خطأ: {e}")
+            print(f"❌ خطأ: {e}")
             return None
