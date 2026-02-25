@@ -1,13 +1,14 @@
 import easyocr
 import logging
 from image_processor import ImageProcessor
-import io
+import numpy as np
 from PIL import Image
+import io
 
 logger = logging.getLogger(__name__)
 
 class SuperOCREngine:
-    """محرك OCR متطور باستخدام EasyOCR (يدعم 80+ لغة)"""
+    """محرك OCR متطور باستخدام EasyOCR - يدعم كوري، إنجليزي، صيني"""
     
     _instance = None
     _reader = None
@@ -19,32 +20,49 @@ class SuperOCREngine:
     
     def __init__(self):
         if self._reader is None:
-            logger.info("جاري تحميل EasyOCR (قد يستغرق دقيقة في أول مرة)...")
-            # قم بتعديل اللغات حسب احتياجك
+            logger.info("🚀 جاري تحميل نماذج OCR (كوري، إنجليزي، صيني)...")
+            # اللغات المطلوبة: كوري، إنجليزي، صيني مبسط
             self._reader = easyocr.Reader(
-                ['ko', 'en', 'ja', 'zh-cn', 'th'],  # الكوري، الإنجليزي، الياباني، الصيني، التايلاندي
+                ['ko', 'en', 'ch_sim'],
                 gpu=False,
                 model_storage_directory='/tmp/easyocr',
-                download_enabled=True
+                download_enabled=True,
+                detector=True,
+                recognizer=True,
+                verbose=False
             )
-            logger.info("✅ تم تحميل EasyOCR بنجاح")
+            logger.info("✅ تم تحميل النماذج بنجاح")
     
     async def extract_text(self, image_bytes):
-        """استخراج النص من الصورة بدقة عالية"""
+        """استخراج النص بدقة عالية جداً"""
         try:
-            # تحسين الصورة أولاً
-            processed_image = ImageProcessor.preprocess_image(image_bytes)
+            # 1. معالجة الصورة لتحسين الجودة
+            processed_bytes = ImageProcessor.preprocess_for_ocr(image_bytes)
             
-            # تحويل البايتات إلى صورة PIL
-            image = Image.open(io.BytesIO(processed_image))
+            # 2. تحويل إلى numpy array
+            image = Image.open(io.BytesIO(processed_bytes))
+            image_np = np.array(image)
             
-            # استخراج النص
+            # 3. ضبط إعدادات OCR للحصول على أفضل نتيجة
             result = self._reader.readtext(
-                np.array(image),
+                image_np,
                 paragraph=True,
-                width_ths=0.7,
-                height_ths=0.7,
-                decoder='greedy'
+                width_ths=0.5,        # تجميع الكلمات المتقاربة
+                height_ths=0.5,
+                x_ths=0.5,
+                y_ths=0.5,
+                decoder='beamsearch',  # أفضل دقة (أبطأ قليلاً)
+                beamWidth=5,
+                batch_size=1,
+                workers=1,
+                contrast_ths=0.2,
+                adjust_contrast=0.5,
+                text_threshold=0.7,    # عتبة الثقة
+                low_text=0.4,
+                link_threshold=0.4,
+                canvas_size=2560,
+                mag_ratio=1.5,
+                slope_ths=0.5
             )
             
             # تجميع النص
