@@ -1,4 +1,4 @@
-from openai import OpenAI
+import openai
 import logging
 from config import OPENAI_API_KEY
 
@@ -6,14 +6,14 @@ logger = logging.getLogger(__name__)
 
 class TranslatorEngine:
     def __init__(self):
-        self.client = OpenAI(api_key=OPENAI_API_KEY)
+        openai.api_key = OPENAI_API_KEY
         
     def translate(self, text):
         try:
             if not text or len(text) < 3:
                 return None
             
-            response = self.client.chat.completions.create(
+            response = openai.ChatCompletion.create(
                 model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": "أنت مترجم محترف لقصص المانهوا. ترجم النص التالي إلى العربية الفصحى بأسلوب أدبي."},
