@@ -9,4 +9,4 @@ if __name__ == "__main__":
         print("❌ توكن الديسكورد مفقود!")
     else:
         bot = ManhwaBot()
-        bot.run(DISCORD_TOKEN)
+        bot.run(token=DISCORD_TOKEN)  # 👈 تم التعديل هنا
