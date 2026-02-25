@@ -85,11 +85,11 @@ class OCREngine:
         try:
             encoded = base64.b64encode(part_bytes).decode('utf-8')
             
-            # ✅ اللغات الصحيحة لـ OCR.Space
+            # ✅ اللغات المدعومة: كوري، عربي، إنجليزي، ياباني (من غير صيني)
             data = {
                 'apikey': self.api_key,
                 'base64Image': f'data:image/jpeg;base64,{encoded}',
-                'language': 'kor,ara,eng,jpn,chs',  # chs = صيني مبسط
+                'language': 'kor,ara,eng,jpn',  # تمت إزالة chi_sim
                 'OCREngine': '2',
                 'isOverlayRequired': False,
                 'detectOrientation': True,
@@ -104,6 +104,19 @@ class OCREngine:
                     if result.get('IsErroredOnProcessing'):
                         error_msg = result.get('ErrorMessage', '')
                         logger.error(f"الجزء {part_num} خطأ: {error_msg}")
+                        
+                        # إذا كان الخطأ بسبب اللغة، حاول مرة أخرى بلغة واحدة فقط
+                        if "language" in error_msg.lower():
+                            logger.info("🔄 جرب لغة واحدة (kor)...")
+                            data['language'] = 'kor'
+                            async with session.post(self.url, data=data, timeout=60) as resp2:
+                                result2 = await resp2.json()
+                                if not result2.get('IsErroredOnProcessing'):
+                                    text = ""
+                                    for parsed in result2.get('ParsedResults', []):
+                                        text += parsed.get('ParsedText', '')
+                                    if text:
+                                        return text
                         return None
                     
                     text = ""
@@ -156,7 +169,7 @@ class OCREngine:
             
             # دمج النصوص
             if all_text:
-                final_text = '\n\n---\n\n'.join(all_text)  # فصل بين الأجزاء
+                final_text = '\n\n---\n\n'.join(all_text)
                 logger.info(f"✅ تم استخراج {len(final_text)} حرف من {len(parts)} أجزاء")
                 return final_text
             
