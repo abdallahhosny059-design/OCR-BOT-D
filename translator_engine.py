@@ -13,7 +13,7 @@ class TranslatorEngine:
             if not text or len(text) < 3:
                 return None
             
-            print(f"🔍 ترجمة: {len(text)} حرف")
+            logger.info(f"🔍 ترجمة: {len(text)} حرف")
             
             # تقسيم النص الطويل إلى أجزاء
             max_chunk = 1000
@@ -21,12 +21,12 @@ class TranslatorEngine:
                 chunks = [text[i:i+max_chunk] for i in range(0, len(text), max_chunk)]
                 translated_chunks = []
                 
-                for i, chunk in enumerate(chunks):
-                    print(f"📦 ترجمة الجزء {i+1}/{len(chunks)}")
+                for i, chunk in enumerate(chunks, 1):
+                    logger.info(f"📦 ترجمة الجزء {i}/{len(chunks)}")
                     translated = self._translate_chunk(chunk)
                     if translated:
                         translated_chunks.append(translated)
-                    time.sleep(0.5)  # انتظار بين الأجزاء
+                    time.sleep(0.5)
                 
                 return ' '.join(translated_chunks) if translated_chunks else None
             
@@ -46,16 +46,16 @@ class TranslatorEngine:
                 "sl": "auto",
                 "tl": "en",
                 "dt": "t",
-                "q": text[:100]  # أول 100 حرف فقط للكشف
+                "q": text[:100]
             }
             
             lang_response = self.session.get(lang_url, params=lang_params, timeout=10)
             if lang_response.status_code == 200:
                 lang_result = lang_response.json()
-                detected_lang = lang_result[2]  # اللغة المكتشفة
-                print(f"🌐 اللغة المكتشفة: {detected_lang}")
+                detected_lang = lang_result[2] if len(lang_result) > 2 else "ko"
+                logger.info(f"🌐 اللغة المكتشفة: {detected_lang}")
             else:
-                detected_lang = "ko"  # افتراضي كوري
+                detected_lang = "ko"
             
             # الترجمة إلى العربية
             url = "https://translate.googleapis.com/translate_a/single"
@@ -79,12 +79,12 @@ class TranslatorEngine:
                         translated_parts.append(part[0])
                 
                 translated = ' '.join(translated_parts)
-                print(f"✅ تمت ترجمة {len(translated)} حرف")
+                logger.info(f"✅ تمت ترجمة {len(translated)} حرف")
                 return translated
             else:
-                print(f"❌ فشل: {response.status_code}")
+                logger.error(f"❌ فشل: {response.status_code}")
                 return None
                 
         except Exception as e:
-            print(f"❌ خطأ: {e}")
+            logger.error(f"❌ خطأ: {e}")
             return None
