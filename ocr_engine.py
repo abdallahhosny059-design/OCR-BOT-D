@@ -1,39 +1,66 @@
-import aiohttp
-import base64
+import easyocr
 import logging
-from config import OCR_API_KEY, OCR_API_URL, OCR_LANGUAGE
+from image_processor import ImageProcessor
+import io
+from PIL import Image
 
 logger = logging.getLogger(__name__)
 
-class OCREngine:
+class SuperOCREngine:
+    """محرك OCR متطور باستخدام EasyOCR (يدعم 80+ لغة)"""
+    
+    _instance = None
+    _reader = None
+    
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+    
     def __init__(self):
-        self.api_key = OCR_API_KEY
-        self.api_url = OCR_API_URL
-        
-    async def extract_text(self, image_data):
+        if self._reader is None:
+            logger.info("جاري تحميل EasyOCR (قد يستغرق دقيقة في أول مرة)...")
+            # قم بتعديل اللغات حسب احتياجك
+            self._reader = easyocr.Reader(
+                ['ko', 'en', 'ja', 'zh-cn', 'th'],  # الكوري، الإنجليزي، الياباني، الصيني، التايلاندي
+                gpu=False,
+                model_storage_directory='/tmp/easyocr',
+                download_enabled=True
+            )
+            logger.info("✅ تم تحميل EasyOCR بنجاح")
+    
+    async def extract_text(self, image_bytes):
+        """استخراج النص من الصورة بدقة عالية"""
         try:
-            encoded = base64.b64encode(image_data).decode('utf-8')
+            # تحسين الصورة أولاً
+            processed_image = ImageProcessor.preprocess_image(image_bytes)
             
-            data = {
-                'apikey': self.api_key,
-                'base64Image': f'data:image/png;base64,{encoded}',
-                'language': OCR_LANGUAGE,
-                'OCREngine': '2'
-            }
+            # تحويل البايتات إلى صورة PIL
+            image = Image.open(io.BytesIO(processed_image))
             
-            async with aiohttp.ClientSession() as session:
-                async with session.post(self.api_url, data=data) as resp:
-                    result = await resp.json()
-                    
-                    if result.get('IsErroredOnProcessing'):
-                        return None
-                    
-                    text = ""
-                    for parsed in result.get('ParsedResults', []):
-                        text += parsed.get('ParsedText', '')
-                    
-                    return text.strip() if text else None
-                    
+            # استخراج النص
+            result = self._reader.readtext(
+                np.array(image),
+                paragraph=True,
+                width_ths=0.7,
+                height_ths=0.7,
+                decoder='greedy'
+            )
+            
+            # تجميع النص
+            text_parts = []
+            for detection in result:
+                text_parts.append(detection[1])
+            
+            full_text = ' '.join(text_parts)
+            
+            if full_text.strip():
+                logger.info(f"✅ تم استخراج {len(full_text)} حرف")
+                return full_text.strip()
+            else:
+                logger.warning("لم يتم العثور على نصوص")
+                return None
+                
         except Exception as e:
-            logger.error(f"OCR Error: {e}")
+            logger.error(f"خطأ في OCR: {e}")
             return None
